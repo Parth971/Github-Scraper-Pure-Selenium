@@ -1,3 +1,18 @@
+"""
+There are three parameters to set:
+1. `links_to_download = None`
+# a. set integer to download specific number of links
+# b. Set None to download all links
+
+2. Initial Link
+LINK = 'https://github.com/Parth971'
+
+3. Ban Waiting Time: time to wait until we request for next link
+ban_waiting_time = 30
+"""
+
+
+
 import json
 import logging
 import os
@@ -31,6 +46,8 @@ console_log.setFormatter(formatter)
 
 root_logger.addHandler(rotating_file_log)
 root_logger.addHandler(console_log)
+
+root_logger.info(f'Testing...')
 
 
 class UrlParser:
@@ -287,10 +304,10 @@ if __name__ == '__main__':
 
     # 1. set integer to download specific number of links
     # 2. Set None to download all links
-    links_to_download = 5
+    links_to_download = None
 
     # Initial Link
-    LINK = 'https://github.com/search?q=django+celery+beat&type=repositories'
+    LINK = 'https://github.com/Parth971'
 
     ban_waiting_time = 30
 

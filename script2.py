@@ -27,16 +27,10 @@ root_logger.addHandler(console_log)
 
 class Utils:
     @staticmethod
-    def save_failed_link(unzipped_file_name, is_any_one_failed):
+    def save_failed_link(unzipped_file_name):
         failed_link_file_path = BASE_DIR / 'outputs/unzip_failed_link.txt'
-
-        is_file_exists = os.path.exists(failed_link_file_path)
-
         with open(failed_link_file_path, 'a') as file:
-            prefix = '' if is_any_one_failed else '\n'
-            if not is_file_exists:
-                prefix = ''
-            file.write(f'{prefix}{unzipped_file_name}\n')
+            file.write(f'{unzipped_file_name}\n')
 
 
 class UnZip:
@@ -48,9 +42,9 @@ class UnZip:
     def run(self):
         root_logger.info('Starting Unzipping.')
         root_logger.info(f'Found {len(self.files)} zips to be unzipped.')
-        is_any_one_failed = False
         for file_name in self.files:
             root_logger.debug(f'{file_name} is unzipping...')
+
             try:
                 with zipfile.ZipFile(self.zips_path / str(file_name), 'r') as zip_ref:
                     unzipped_file_name = zip_ref.infolist()[0].filename[:-1]
@@ -59,8 +53,7 @@ class UnZip:
             except zipfile.BadZipFile:
                 message = f'File not unzipped properly. {file_name} is Corrupted file!'
                 root_logger.error(f"File unzip failed. Error: {message}")
-                Utils.save_failed_link(file_name, is_any_one_failed)
-                is_any_one_failed = True
+                Utils.save_failed_link(file_name)
 
     def get_all_zips(self):
         all_zip_files = set()
@@ -114,3 +107,8 @@ class UnZip:
 if __name__ == '__main__':
     zips_path = BASE_DIR / 'RepoDownloads'
     UnZip(zips_input_path=zips_path).run()
+
+
+
+
+
