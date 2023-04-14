@@ -1,4 +1,4 @@
-## Install requirements
+## Install requirements (Python 3.8)
 ```python 
 pip install -r requirements.txt
 ```
