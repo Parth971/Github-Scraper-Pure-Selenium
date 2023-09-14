@@ -168,10 +168,11 @@ class DownloadGitZips:
         try:
             self.wd.switch_to.window(self.wd.window_handles[0])
         except NoSuchWindowException as e:
-            print(f'Error in get_downloaded_filename: NoSuchWindowException: {e}')
+            root_logger.error(f'Error in get_downloaded_filename: NoSuchWindowException: {e}')
             return
         time.sleep(5)
-        while True:
+        counter = 0
+        while counter <= 5:
             try:
                 # get downloaded percentage
                 download_percentage = self.wd.execute_script(
@@ -191,7 +192,8 @@ class DownloadGitZips:
                         "return document.querySelector('downloads-manager').shadowRoot.querySelector('#downloadsList downloads-item').shadowRoot.querySelector('div#content #file-link').text")
                 time.sleep(1)
             except JavascriptException as e:
-                print(f'Error in get_downloaded_filename: JavascriptException: {e}')
+                root_logger.debug(f'Error in get_downloaded_filename: JavascriptException: {e.msg}')
+                counter += 1
 
     def download_file(self, url, file_number):
         try:
@@ -246,7 +248,7 @@ class DownloadGitZips:
                     root_logger.error(f"File downloading failed. Error: {message}")
                     Utils.save_failed_link(repository_url, starting_number)
                     continue
-                
+
                 new_file_name = Utils.get_repository_name(repository_url)
                 new_file_name = Utils.rename_file(file_name, new_file_name, starting_number)
 
@@ -265,7 +267,7 @@ class DownloadGitZips:
                 message = f'{repository_url} is invalid'
                 root_logger.error(f"File downloading failed. Error: {message}")
                 Utils.save_failed_link(repository_url, starting_number)
-                
+
         root_logger.info('############## COMPLETED DOWNLOADING ##############')
 
         failed_links_count = Utils.get_failed_links_count()
