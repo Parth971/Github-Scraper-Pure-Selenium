@@ -1,4 +1,4 @@
 selenium==4.5.0
-webdriver_manager==3.8.4
+webdriver-manager==4.0.0
 packaging==21.3
 utilmy==0.1.16667473
