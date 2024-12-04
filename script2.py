@@ -50,7 +50,7 @@ class UnZip:
                     unzipped_file_name = zip_ref.infolist()[0].filename[:-1]
                     zip_ref.extractall(self.zips_path)
                     UnZip.rename_file(self.zips_path, unzipped_file_name, file_name)
-            except zipfile.BadZipFile:
+            except Exception:
                 message = f'File not unzipped properly. {file_name} is Corrupted file!'
                 root_logger.error(f"File unzip failed. Error: {message}")
                 Utils.save_failed_link(file_name)
@@ -92,7 +92,7 @@ class UnZip:
             file.write(name + '\n')
 
     def clean_up(self):
-        message = 'Started Cleanup.'
+        message = 'Cleanup.'
         root_logger.info(message)
 
         folder_path = self.zips_path
@@ -107,6 +107,8 @@ class UnZip:
 if __name__ == '__main__':
     zips_path = BASE_DIR / 'RepoDownloads'
     UnZip(zips_input_path=zips_path).run()
+    UnZip(zips_input_path=zips_path).clean_up()
+
 
 
 

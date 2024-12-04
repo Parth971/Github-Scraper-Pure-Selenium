@@ -17,12 +17,15 @@ from selenium.webdriver.support import expected_conditions as EC
 
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
 
-log_file = BASE_DIR / 'outputs/downloading_links.log'
+if not os.path.exists(BASE_DIR / "RepoDownloads"):
+    os.mkdir("RepoDownloads")
+
+log_file = BASE_DIR / "outputs/downloading_links.log"
 
 root_logger = logging.getLogger(__name__)
 root_logger.setLevel(logging.DEBUG)
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 rotating_file_log = RotatingFileHandler(log_file, maxBytes=10485760, backupCount=1)
 rotating_file_log.setFormatter(formatter)
@@ -37,49 +40,51 @@ root_logger.addHandler(console_log)
 
 class Utils:
     @staticmethod
-    def get_failed_links_count():
-        failed_link_file_path = BASE_DIR / 'outputs/failed_link.txt'
+    def get_failed_links():
+        failed_link_file_path = BASE_DIR / "outputs/failed_link.txt"
         if os.path.exists(failed_link_file_path):
-            with open(failed_link_file_path, 'r') as file:
-                return len(set(file.readlines()))
-        return 0
+            with open(failed_link_file_path, "r") as file:
+                return list(set(file.readlines()))
+        return []
 
     @staticmethod
-    def get_collected_links_count():
-        collected_link_file_path = BASE_DIR / 'outputs/collected_links.txt'
+    def get_collected_links():
+        collected_link_file_path = BASE_DIR / "outputs/collected_links.txt"
         if os.path.exists(collected_link_file_path):
-            with open(collected_link_file_path, 'r') as file:
-                return len(file.readlines())
+            with open(collected_link_file_path, "r") as file:
+                return list(file.readlines())
         return 0
 
     @staticmethod
-    def get_downloaded_links_count():
-        downloaded_links_file_path = BASE_DIR / 'outputs/downloaded_link.txt'
+    def get_downloaded_links():
+        downloaded_links_file_path = BASE_DIR / "outputs/downloaded_link.txt"
         if os.path.exists(downloaded_links_file_path):
-            with open(downloaded_links_file_path, 'r') as file:
-                return len(file.readlines())
+            with open(downloaded_links_file_path, "r") as file:
+                return list(file.readlines())
         return 0
 
     @staticmethod
     def save_failed_link(current_page_link, starting_number):
-        failed_link_file_path = BASE_DIR / 'outputs/failed_link.txt'
-        with open(failed_link_file_path, 'a') as file:
-            file.write(f'{starting_number} {current_page_link}\n')
+        failed_link_file_path = BASE_DIR / "outputs/failed_link.txt"
+        with open(failed_link_file_path, "a") as file:
+            file.write(f"{starting_number} {current_page_link}\n")
 
     @staticmethod
     def rename_file(old_file_name, new_file_name, file_number):
         try:
-            old_name = BASE_DIR / 'RepoDownloads' / old_file_name
-            new_name = BASE_DIR / 'RepoDownloads' / f'{new_file_name}_N{file_number}.zip'
+            old_name = BASE_DIR / "RepoDownloads" / old_file_name
+            new_name = (
+                BASE_DIR / "RepoDownloads" / f"{new_file_name}_N{file_number}.zip"
+            )
             os.rename(old_name, new_name)
-            return f'{new_file_name}_N{file_number}.zip'
+            return f"{new_file_name}_N{file_number}.zip"
         except FileNotFoundError:
             pass
 
     @staticmethod
     def get_repository_name(url):
         url = url if url[-1] != "/" else url[:-1]
-        return url.split('/')[-2] + "_" + url.split('/')[-1]
+        return url.split("/")[-2] + "_" + url.split("/")[-1]
 
     @staticmethod
     def read_urls(file_path):
@@ -87,7 +92,7 @@ class Utils:
         if not os.path.exists(file_path):
             return raw_data
 
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             for url in file.readlines():
                 raw_data.append(url.strip())
 
@@ -100,7 +105,7 @@ class Utils:
 
         if downloaded_links:
             root_logger.info(f"Found downloaded links: {len(downloaded_links)}")
-            links_ = '\n'.join([i.replace(' ', ' skipping ') for i in downloaded_links])
+            links_ = "\n".join([i.replace(" ", " skipping ") for i in downloaded_links])
             root_logger.info(f"links: {links_}")
 
         for link in downloaded_links:
@@ -110,36 +115,36 @@ class Utils:
 
     @staticmethod
     def downloaded_link(link, number):
-        file_path = BASE_DIR / 'outputs/downloaded_link.txt'
-        with open(file_path, 'a') as file:
-            file.write(f'{number} {link}\n')
+        file_path = BASE_DIR / "outputs/downloaded_link.txt"
+        with open(file_path, "a") as file:
+            file.write(f"{number} {link}\n")
 
 
 class CleanUp:
     def __init__(self, downloaded_link_path):
-        message = 'Started Cleanup.'
+        message = "Started Cleanup."
         root_logger.debug(message)
 
-        folder_path = BASE_DIR / 'RepoDownloads'
+        folder_path = BASE_DIR / "RepoDownloads"
         dir_list = os.listdir(folder_path)
         for file_name in dir_list:
             if not os.path.isdir(folder_path / str(file_name)):
                 file_name = str(file_name)
                 if not CleanUp.is_file_valid(file_name, downloaded_link_path):
-                    message = f'Removing file : {file_name}.'
+                    message = f"Removing file : {file_name}."
                     root_logger.info(message)
 
                     os.remove(folder_path / file_name)
 
     @classmethod
     def is_file_valid(cls, file_name, downloaded_link_path):
-        pattern = r'w?_N[0-9]+.zip'
+        pattern = r"w?_N[0-9]+.zip"
 
         downloaded_links = Utils.read_urls(downloaded_link_path)
         for i in range(len(downloaded_links)):
-            number = downloaded_links[i].split(' ')[0]
-            link = downloaded_links[i].split(' ')[1]
-            link = link if link[-1] != '/' else link[:-1]
+            number = downloaded_links[i].split(" ")[0]
+            link = downloaded_links[i].split(" ")[1]
+            link = link if link[-1] != "/" else link[:-1]
             file = f"{link.split('/')[-2]}_{link.split('/')[-1]}_N{number}.zip"
             downloaded_links[i] = file
 
@@ -157,66 +162,80 @@ class DownloadGitZips:
     def get_webdriver(cls, download_path):
         options = Options()
         options.add_argument("--start-maximized")
-        options.add_experimental_option('prefs', {'download.default_directory': download_path})
+        options.add_experimental_option(
+            "prefs", {"download.default_directory": download_path}
+        )
 
         return webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=options
+            service=Service(ChromeDriverManager().install()), options=options
         )
 
     def get_downloaded_filename(self):
         try:
             self.wd.switch_to.window(self.wd.window_handles[0])
         except NoSuchWindowException as e:
-            root_logger.error(f'Error in get_downloaded_filename: NoSuchWindowException: {e}')
+            print(f"Error in get_downloaded_filename: NoSuchWindowException: {e}")
             return
         time.sleep(5)
-        counter = 0
-        while counter <= 5:
+        while True:
             try:
-                # get downloaded percentage
-                download_percentage = self.wd.execute_script(
-                    "return document.querySelector('downloads-manager').shadowRoot.querySelector('#downloadsList downloads-item').shadowRoot.querySelector('#progress').value")
-                # check if downloadPercentage is 100 (otherwise the script will keep waiting)
-                if download_percentage == 100:
-                    show_in_folder_option = self.wd.execute_script(
-                        "return document.querySelector('downloads-manager').shadowRoot.querySelector('#downloadsList downloads-item').shadowRoot.querySelector('#progress').parentElement.style.display")
+                # get downloading is in progress
+                in_progress = bool(
+                    self.wd.execute_script(
+                        "return document.querySelector('downloads-manager').shadowRoot.querySelector('#list downloads-item').shadowRoot.querySelector('#progress')"
+                    )
+                )
+                show_in_folder_option_hidden = bool(
+                    self.wd.execute_script(
+                        "return document.querySelector('downloads-manager').shadowRoot.querySelector('#downloadsList downloads-item').shadowRoot.querySelector('#quick-show-in-folder').hidden"
+                    )
+                )
+                is_failed_error_shown = bool(
+                    self.wd.execute_script(
+                        "return document.querySelector('downloads-manager').shadowRoot.querySelector('#list downloads-item').shadowRoot.querySelector('#tag').innerText"
+                    )
+                )
 
-                    while show_in_folder_option != 'none':
-                        time.sleep(1)
-                        show_in_folder_option = self.wd.execute_script(
-                            "return document.querySelector('downloads-manager').shadowRoot.querySelector('#downloadsList downloads-item').shadowRoot.querySelector('#progress').parentElement.style.display")
-                    time.sleep(1)
+                if is_failed_error_shown:
+                    return None
+
+                # check if download progress bar is completed (otherwise the script will keep waiting)
+                if not in_progress and not show_in_folder_option_hidden:
                     # return the file name once the download is completed
-                    return self.wd.execute_script(
-                        "return document.querySelector('downloads-manager').shadowRoot.querySelector('#downloadsList downloads-item').shadowRoot.querySelector('div#content #file-link').text")
+                    filename = self.wd.execute_script(
+                        "return document.querySelector('downloads-manager').shadowRoot.querySelector('#downloadsList downloads-item').shadowRoot.querySelector('#file-link').text"
+                    )
+                    return filename
+
                 time.sleep(1)
             except JavascriptException as e:
-                root_logger.debug(f'Error in get_downloaded_filename: JavascriptException: {e.msg}')
-                counter += 1
+                print(f"Error in get_downloaded_filename: JavascriptException: {e}")
 
     def download_file(self, url, file_number):
         try:
             self.wd.execute_script("window.open()")
             self.wd.switch_to.window(self.wd.window_handles[-1])
             self.wd.get(url)
-            element = 'get-repo details>summary'
+            element = "//react-partial/div/div/div[2]/div[2]/button"
             WebDriverWait(self.wd, 2).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, element))
+                EC.presence_of_element_located((By.XPATH, element))
             )
-            self.wd.find_element(By.CSS_SELECTOR, element).click()
+            self.wd.find_element(By.XPATH, element).click()
 
-            element = '//div[@id="local-panel"]/ul/li[last()]/a'
+            element = '//*[contains(text(), "Download ZIP")]//ancestor::a'
             WebDriverWait(self.wd, 2).until(
                 EC.presence_of_element_located((By.XPATH, element))
             )
             self.wd.find_element(By.XPATH, element).click()
         except JavascriptException as e:
-            root_logger.info(f'Error in download_file: {e}')
+            root_logger.info(f"Error in download_file: JavascriptException | {e}")
             return
         except TimeoutException as e:
-            root_logger.info(f'Error in download_file: {e}')
+            root_logger.info(f"Error in download_file: TimeoutException | {e}")
             raise TimeoutException
+        except Exception as e:
+            root_logger.info(f"Error in download_file: Exception | {e}")
+            return
 
         file_name = self.get_downloaded_filename()
         time.sleep(2)
@@ -228,68 +247,76 @@ class DownloadGitZips:
 
     def run(self, repository_urls):
         done_urls = []
-        self.wd.get('chrome://downloads')
+        self.wd.get("chrome://downloads")
 
         for repository_url in repository_urls:
-            starting_number, repository_url = repository_url.split(' ')
+            starting_number, repository_url = repository_url.split(" ")
 
-            root_logger.info(f'Downloading {repository_url} ...')
+            root_logger.info(f"Downloading {repository_url} ...")
 
             if repository_url in self.downloaded_links + done_urls:
-                root_logger.info('This url is already downloaded. Skipping...')
+                root_logger.info("This url is already downloaded. Skipping...")
                 Utils.downloaded_link(repository_url, starting_number)
                 continue
 
             try:
-                file_name = self.download_file(url=repository_url, file_number=starting_number)
+                file_name = self.download_file(
+                    url=repository_url, file_number=starting_number
+                )
 
                 if file_name is None:
-                    message = 'File not downloaded properly.'
+                    message = "File not downloaded properly."
                     root_logger.error(f"File downloading failed. Error: {message}")
                     Utils.save_failed_link(repository_url, starting_number)
                     continue
 
                 new_file_name = Utils.get_repository_name(repository_url)
-                new_file_name = Utils.rename_file(file_name, new_file_name, starting_number)
+                new_file_name = Utils.rename_file(
+                    file_name, new_file_name, starting_number
+                )
 
                 if new_file_name is None:
-                    message = 'File not downloaded properly.'
+                    message = "File not downloaded properly."
                     root_logger.error(f"File downloading failed. Error: {message}")
                     Utils.save_failed_link(repository_url, starting_number)
                     continue
 
-                message = f'File downloaded successfully with name {new_file_name}'
+                message = f"File downloaded successfully with name {new_file_name}"
                 root_logger.info(message)
 
                 Utils.downloaded_link(repository_url, starting_number)
                 done_urls.append(repository_url)
             except TimeoutException:
-                message = f'{repository_url} is invalid'
+                message = f"{repository_url} is invalid"
                 root_logger.error(f"File downloading failed. Error: {message}")
                 Utils.save_failed_link(repository_url, starting_number)
 
-        root_logger.info('############## COMPLETED DOWNLOADING ##############')
+        root_logger.info("############## COMPLETED DOWNLOADING ##############")
 
-        failed_links_count = Utils.get_failed_links_count()
-        collected_links_count = Utils.get_collected_links_count()
-        downloaded_links_count = Utils.get_downloaded_links_count()
+        collected_links_count = Utils.get_collected_links()
+        downloaded_links_count = Utils.get_downloaded_links()
+        failed_links_count = Utils.get_failed_links()
 
-        summary = f'''
+        failed_links_count = list(
+            filter(lambda i: i not in downloaded_links_count, failed_links_count)
+        )
+
+        summary = f"""
 ########################################## SUMMARY ##########################################
-collected links: {collected_links_count}
-downloaded_links_count: {downloaded_links_count}
-failed_links_count: {failed_links_count}
-downloaded_links_count + failed_links_count : {downloaded_links_count + failed_links_count}
-        '''
+collected links: {len(collected_links_count)}
+downloaded_links_count: {len(downloaded_links_count)}
+failed_links_count: {len(failed_links_count)}
+downloaded_links_count + failed_links_count : {len(downloaded_links_count) + len(failed_links_count)}
+        """
 
         root_logger.info(summary)
 
 
-if __name__ == '__main__':
-    collected_links_file_path = BASE_DIR / 'outputs/collected_links.txt'
-    downloaded_link_file_path = BASE_DIR / 'outputs/downloaded_link.txt'
-    downloaded_file_names_path = BASE_DIR / 'outputs/downloaded_file_names.txt'
-    repos_download_folder_path = BASE_DIR / 'RepoDownloads'
+if __name__ == "__main__":
+    collected_links_file_path = BASE_DIR / "outputs/collected_links.txt"
+    downloaded_link_file_path = BASE_DIR / "outputs/downloaded_link.txt"
+    downloaded_file_names_path = BASE_DIR / "outputs/downloaded_file_names.txt"
+    repos_download_folder_path = BASE_DIR / "RepoDownloads"
 
     root_logger.debug(
         "\n\n#########################################################################################\n\n"
@@ -300,11 +327,14 @@ if __name__ == '__main__':
 
     links = Utils.get_starting_links(
         collected_links_path=collected_links_file_path,
-        downloaded_link_path=downloaded_link_file_path
+        downloaded_link_path=downloaded_link_file_path,
     )
     root_logger.info(f"\n\nTotal links found to start download: {len(links)}")
 
-    DownloadGitZips(download_path=repos_download_folder_path, downloaded_link_path=downloaded_link_file_path).run(links)
+    DownloadGitZips(
+        download_path=repos_download_folder_path,
+        downloaded_link_path=downloaded_link_file_path,
+    ).run(links)
 
     root_logger.debug(
         "\n\n#########################################################################################\n\n"
